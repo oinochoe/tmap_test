@@ -23,7 +23,7 @@ var _tMap = (function (tMap) {
             'area',
             'filename',
             'category',
-            'menu'
+            'menu',
         ];
         $('.header').stop().hide(0);
 
@@ -34,7 +34,7 @@ var _tMap = (function (tMap) {
             // height: '400px',
             zoom: 15, // zoom level입니다.  0~19 레벨을 서비스 하고 있습니다.
             zoomControl: true,
-            scrollwheel: true
+            scrollwheel: true,
         };
         var timeId = '';
 
@@ -42,6 +42,7 @@ var _tMap = (function (tMap) {
         var map = new Tmapv2.Map('map', mapOptions);
 
         var markers = [];
+        var infowindow = new Tmapv2.InfoWindow();
         var loadCurrentPosition = 0;
         var location = '';
 
@@ -49,7 +50,6 @@ var _tMap = (function (tMap) {
             if (loadCurrentPosition < 1) {
                 location = new Tmapv2.LatLng(position.coords.latitude, position.coords.longitude);
                 loadCurrentPosition++;
-                return;
             }
 
             if (!location) {
@@ -152,19 +152,18 @@ var _tMap = (function (tMap) {
         };
 
         var agreeGeoLocation = function () {
-            return;
-            var loc = new Tmapv2.LatLng(_myPositionY, _myPositionX);
-            var infoLoc = new Tmapv2.LatLng(_myPositionY + 0.0001, _myPositionX);
-            var marker = new naver.maps.Marker({
-                position: loc,
-                map: map
-            });
-            map.setCenter(loc);
-            infowindow.setContent('<div style="padding:20px;">현재 위치(임시, 가짜)</div>');
-            infowindow.open(map, infoLoc);
-            marker.setMap(map);
-            map.setZoom(19);
-            return;
+            // var loc = new Tmapv2.LatLng(_myPositionY, _myPositionX);
+            // var infoLoc = new Tmapv2.LatLng(_myPositionY + 0.0001, _myPositionX);
+            // var marker = new Tmapv2.Marker({
+            //     position: loc,
+            //     map: map,
+            // });
+            // map.setCenter(loc);
+            // infowindow.setContent('<div style="padding:20px;">현재 위치(임시, 가짜)</div>');
+            // infowindow.open(map, infoLoc);
+            // marker.setMap(map);
+            // map.setZoom(19);
+            // return;
 
             if (navigator.geolocation) {
                 if (loadCurrentPosition < 1) {
@@ -281,7 +280,7 @@ var _tMap = (function (tMap) {
         } else {
             tMap.render(_event, 'event', 'tabmenu');
         }
-        agreeGeoLocation();
+        // agreeGeoLocation();
     };
 
     tMap.loadingEnd = function (delay) {
@@ -335,7 +334,7 @@ var _tMap = (function (tMap) {
             path: arrPoint,
             strokeColor: '#DD0000',
             strokeWeight: 6,
-            map: map
+            map: map,
         });
         resultdrawArr.push(polyline_);
     }
@@ -351,7 +350,7 @@ var _tMap = (function (tMap) {
             position: new Tmapv2.LatLng(37.5668986, 126.97871544),
             icon: 'http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_s.png',
             iconSize: new Tmapv2.Size(24, 38),
-            map: map
+            map: map,
         });
 
         // 도착
@@ -359,7 +358,7 @@ var _tMap = (function (tMap) {
             position: new Tmapv2.LatLng(37.57081522, 127.00160213),
             icon: 'http://tmapapi.sktelecom.com/upload/tmap/marker/pin_r_m_e.png',
             iconSize: new Tmapv2.Size(24, 38),
-            map: map
+            map: map,
         });
 
         // 3. 경로탐색 API 사용요청
@@ -376,7 +375,7 @@ var _tMap = (function (tMap) {
                 reqCoordType: 'WGS84GEO',
                 resCoordType: 'EPSG3857',
                 startName: '출발지',
-                endName: '도착지'
+                endName: '도착지',
             },
             success: function (response) {
                 var resultData = response.features;
@@ -446,7 +445,7 @@ var _tMap = (function (tMap) {
                             markerImage: markerImg,
                             lng: convertPoint._lng,
                             lat: convertPoint._lat,
-                            pointType: pType
+                            pointType: pType,
                         };
 
                         // Marker 추가
@@ -454,15 +453,18 @@ var _tMap = (function (tMap) {
                             position: new Tmapv2.LatLng(routeInfoObj.lat, routeInfoObj.lng),
                             icon: routeInfoObj.markerImage,
                             iconSize: size,
-                            map: map
+                            map: map,
                         });
                     }
                 } //for문 [E]
                 drawLine(drawInfoArr);
+
+                /* TODO: 현 위치 테스트 */
+                agreeGeoLocation();
             },
             error: function (request, status, error) {
                 console.log('code:' + request.status + '\n' + 'message:' + request.responseText + '\n' + 'error:' + error);
-            }
+            },
         });
     }
     initTmap();
@@ -493,7 +495,7 @@ var _tMap = (function (tMap) {
                     map: map,
                     position: position,
                     title: mapData[i].title,
-                    icon: '/upload/' + upload + '/' + mapData[i].imagename
+                    icon: '/upload/' + upload + '/' + mapData[i].imagename,
                     // iconSize: new naver.maps.Size(135, 135),
                 });
 
@@ -541,7 +543,7 @@ var _tMap = (function (tMap) {
                 },
                 select: function (event, ui) {
                     $($selector + 'Cord').val(ui.item.point);
-                }
+                },
             });
         };
 
