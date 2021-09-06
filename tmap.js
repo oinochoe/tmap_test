@@ -42,9 +42,10 @@ var _tMap = (function (tMap) {
         var map = new Tmapv2.Map('map', mapOptions);
 
         var markers = [];
-        var infowindow = new Tmapv2.InfoWindow();
         var loadCurrentPosition = 0;
         var location = '';
+
+        var infoWindow = '';
 
         var onSuccessGeolocation = function (position) {
             if (loadCurrentPosition < 1) {
@@ -58,9 +59,13 @@ var _tMap = (function (tMap) {
 
             map.setCenter(location);
             map.setZoom(19);
-
-            infowindow.setContent('<div style="padding:20px; margin-bottom:30px">' + '현재 위치' + '</div>');
-            infowindow.open(map, location);
+            infoWindow = new Tmapv2.InfoWindow({
+                position: location,
+                content: '<div style="padding:20px; margin-bottom:30px">' + '현재 위치' + '</div>',
+                border: '0px solid #FF0000', //Popup의 테두리 border 설정.
+                type: 2, //Popup의 type 설정.
+                map: map, //Popup이 표시될 맵 객체
+            });
             console.log('Coordinates: ' + location.toString());
         };
 
@@ -159,8 +164,8 @@ var _tMap = (function (tMap) {
             //     map: map,
             // });
             // map.setCenter(loc);
-            // infowindow.setContent('<div style="padding:20px;">현재 위치(임시, 가짜)</div>');
-            // infowindow.open(map, infoLoc);
+            // infoWindow.setContent('<div style="padding:20px;">현재 위치(임시, 가짜)</div>');
+            // infoWindow.open(map, infoLoc);
             // marker.setMap(map);
             // map.setZoom(19);
             // return;
@@ -173,8 +178,8 @@ var _tMap = (function (tMap) {
                 onSuccessGeolocation(location);
             } else {
                 var center = map.getCenter();
-                infowindow.setContent('<div style="padding:20px;"><h5 style="margin-bottom:5px;color:#f00;">Geolocation not supported</h5></div>');
-                infowindow.open(map, center);
+                infoWindow.setContent('<div style="padding:20px;"><h5 style="margin-bottom:5px;color:#f00;">Geolocation not supported</h5></div>');
+                infoWindow.open(map, center);
             }
         };
 
