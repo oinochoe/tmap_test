@@ -2,11 +2,69 @@ var _tMap = (function (tMap) {
     ('use strict');
 
     /* TODO: 임시데이터 삭제해야함 */
-    var _myPositionY = 37.2820716;
-    var _myPositionX = 127.0123522;
-
-    // TODO: 테스트
+    tMap._myPositionY = 37.281787642136216 || 0;
+    tMap._myPositionX = 127.01519107419634 || 0;
     var useMap = true;
+
+    var location = '';
+    var clicker = false;
+    var CALL_CURRENT_TIME = 1000 * 5;
+    var ERROR_MESSAGE = 0;
+    var options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0,
+    };
+
+    var currentPosition = function (locate) {
+        var infoLoc = new Tmapv2.LatLng(tMap._myPositionY, tMap._myPositionX);
+        new Tmapv2.InfoWindow({
+            position: infoLoc,
+            content: '<div>현재 위치</div>', //Popup 표시될 text
+            type: 2, //Popup의 type 설정.
+            map: map, //Popup이 표시될 맵 객체
+        });
+        var loc = new Tmapv2.LatLng(tMap._myPositionY, tMap._myPositionX);
+        var marker = new Tmapv2.Marker({
+            position: loc,
+            map: map,
+        });
+        map.setCenter(locate || loc);
+        marker.setMap(map);
+        map.setZoom(19);
+    };
+
+    var onSuccessGeolocation = function (position) {
+        location = new Tmapv2.LatLng(position.coords.latitude, position.coords.longitude);
+        tMap._myPositionY = position.coords.latitude;
+        tMap._myPositionX = position.coords.longitude;
+        if (!!location && !!clicker) {
+            currentPosition(location);
+        }
+    };
+
+    var onErrorGeolocation = function () {
+        tMap._myPositionY = 37.281787642136216;
+        tMap._myPositionX = 127.01519107419634;
+        console.error('error current position');
+        if (ERROR_MESSAGE < 1) {
+            alert('내 위치 확인을 위해 사용기기 및 브라우저의 설정에서 "위치정보" 사용을 허용해 주시기 바랍니다.');
+            tMap.vibrate();
+            ERROR_MESSAGE += 1;
+        }
+    };
+
+    tMap.agreeGeoLocation = function (func) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(onSuccessGeolocation, onErrorGeolocation, options);
+            clicker = false;
+        }
+        if (typeof func == 'function') {
+            setTimeout(function () {
+                func();
+            }, 500);
+        }
+    };
 
     if (!!useMap) {
         var ReplaceStr = [
@@ -29,75 +87,45 @@ var _tMap = (function (tMap) {
 
         /* 지도 옵션 */
         var mapOptions = {
-            center: new Tmapv2.LatLng(37.566481622437934, 126.98502302169841), // 지도 초기 좌표
+            center: new Tmapv2.LatLng(tMap._myPositionY, tMap._myPositionX), // 지도 초기 좌표
             width: '100%',
-            // height: '400px',
             zoom: 15, // zoom level입니다.  0~19 레벨을 서비스 하고 있습니다.
             zoomControl: true,
             scrollwheel: true,
         };
+
         var timeId = '';
 
         /* 지도 객체 */
         var map = new Tmapv2.Map('map', mapOptions);
 
         var markers = [];
-        var loadCurrentPosition = 0;
-        var location = '';
 
-        var infoWindow = '';
+        var updateMarkers = function (maps, markerInfo) {
+            var mapBounds = maps.getBounds();
+            var marker, position;
 
-        var onSuccessGeolocation = function (position) {
-            if (loadCurrentPosition < 1) {
-                location = new Tmapv2.LatLng(position.coords.latitude, position.coords.longitude);
-                loadCurrentPosition++;
+            for (var i = 0; i < markerInfo.length; i++) {
+                marker = markerInfo[i];
+                position = marker.getPosition();
+
+                if (mapBounds.hasLatLng(position)) {
+                    showMarker(maps, marker);
+                } else {
+                    hideMarker(maps, marker);
+                }
             }
-
-            if (!location) {
-                location = new Tmapv2.LatLng(position.coords.latitude, position.coords.longitude);
-            }
-
-            map.setCenter(location);
-            map.setZoom(19);
-            infoWindow = new Tmapv2.InfoWindow({
-                position: location,
-                content: '<div style="padding:20px; margin-bottom:30px">' + '현재 위치' + '</div>',
-                border: '0px solid #FF0000', //Popup의 테두리 border 설정.
-                type: 2, //Popup의 type 설정.
-                map: map, //Popup이 표시될 맵 객체
-            });
-            console.log('Coordinates: ' + location.toString());
         };
 
-        var onErrorGeolocation = function () {
-            console.error('error current position');
+        var showMarker = function (maps, marker) {
+            if (marker.setMap()) return;
+            marker.setMap(maps);
         };
 
-        // var updateMarkers = function (maps, markerInfo) {
-        //     var mapBounds = maps.getBounds();
-        //     var marker, position;
-
-        //     for (var i = 0; i < markerInfo.length; i++) {
-        //         marker = markerInfo[i];
-        //         position = marker.getPosition();
-
-        //         if (mapBounds.hasLatLng(position)) {
-        //             showMarker(maps, marker);
-        //         } else {
-        //             hideMarker(maps, marker);
-        //         }
-        //     }
-        // };
-
-        // var showMarker = function (maps, marker) {
-        //     if (marker.setMap()) return;
-        //     marker.setMap(maps);
-        // };
-
-        // var hideMarker = function (maps, marker) {
-        //     if (!marker.setMap()) return;
-        //     marker.setMap(null);
-        // };
+        var hideMarker = function (maps, marker) {
+            if (!marker.setMap()) return;
+            marker.setMap(null);
+        };
 
         var allReplace = function ($elm, $clone, arr, data) {
             var $html = $clone.html();
@@ -125,26 +153,42 @@ var _tMap = (function (tMap) {
             $elm.empty().append($html);
         };
 
-        // 해당 마커의 인덱스를 seq라는 클로저 변수로 저장하는 이벤트 핸들러를 반환합니다.
-        var getClickHandler = function (db, seq, name, active) {
+        var getClickHandler = function (db, seq, name, active, category) {
             return function () {
                 var targetName = name;
+                var activeImage = '';
 
                 var data = db.filter(function (val) {
                     return val.no === seq;
                 });
 
-                $('.js-markersActiver').each(function () {
-                    var $this = $(this);
+                if ('event' === name) {
+                    activeImage = '/upload/' + name + '/' + active;
+                } else if ('conv_parking' === name) {
+                    activeImage = '/img/marker/parking_on.png';
+                } else if ('conv_toilet' === name) {
+                    activeImage = '/img/marker/toilet_on.png';
+                } else if ('conv_store' === name) {
+                    if ('음식점' === category) {
+                        activeImage = '/img/marker/food_on.png';
+                    } else if ('카페' === category) {
+                        activeImage = '/img/marker/cafe_on.png';
+                    } else if ('디저트' === category) {
+                        activeImage = '/img/marker/desert_on.png';
+                    }
+                }
+
+                $('div[title]').each(function () {
+                    var $this = $(this).find('img');
                     if ($this.attr('data-src')) {
                         $this.attr('src', $this.attr('data-src'));
                     }
                 });
 
-                $('.js-' + seq)
+                $('div[title="' + name + seq + '"] img')
                     .eq(0)
-                    .attr('data-src', $('.js-' + seq).attr('src'))
-                    .attr('src', '/upload/' + name + '/' + active);
+                    .attr('data-src', $('div[title="' + name + seq + '"] img').attr('src'))
+                    .attr('src', activeImage);
 
                 $('.js-dimmed, .js-popOpen').css('display', 'none');
                 $('[data-open="' + targetName + '"]').css('display', 'block');
@@ -156,39 +200,12 @@ var _tMap = (function (tMap) {
             };
         };
 
-        var agreeGeoLocation = function () {
-            // var loc = new Tmapv2.LatLng(_myPositionY, _myPositionX);
-            // var infoLoc = new Tmapv2.LatLng(_myPositionY + 0.0001, _myPositionX);
-            // var marker = new Tmapv2.Marker({
-            //     position: loc,
-            //     map: map,
-            // });
-            // map.setCenter(loc);
-            // infoWindow.setContent('<div style="padding:20px;">현재 위치(임시, 가짜)</div>');
-            // infoWindow.open(map, infoLoc);
-            // marker.setMap(map);
-            // map.setZoom(19);
-            // return;
-
-            if (navigator.geolocation) {
-                if (loadCurrentPosition < 1) {
-                    navigator.geolocation.getCurrentPosition(onSuccessGeolocation, onErrorGeolocation);
-                    return;
-                }
-                onSuccessGeolocation(location);
-            } else {
-                var center = map.getCenter();
-                infoWindow.setContent('<div style="padding:20px;"><h5 style="margin-bottom:5px;color:#f00;">Geolocation not supported</h5></div>');
-                infoWindow.open(map, center);
-            }
-        };
-
         var eventHandler = function () {
             $('.buttons > input').on('click', function (e) {
                 e.preventDefault();
                 var mapTypeId = this.id;
-                if (map.getMapTypeId() !== naver.maps.MapTypeId[mapTypeId]) {
-                    map.setMapTypeId(naver.maps.MapTypeId[mapTypeId]); // 지도 유형 변경하기
+                if (map.getMapTypeId() !== tMap.MapTypeId[mapTypeId]) {
+                    map.setMapTypeId(tMap.MapTypeId[mapTypeId]); // 지도 유형 변경하기
                     $('.buttons > input').removeClass('control-on');
                     $(this).addClass('control-on');
                 }
@@ -229,7 +246,8 @@ var _tMap = (function (tMap) {
             });
 
             $('.js-currentMap').on('click', function (e) {
-                agreeGeoLocation();
+                tMap.agreeGeoLocation();
+                clicker = true;
             });
 
             /* 지도 커스텀 스타일 */
@@ -245,17 +263,12 @@ var _tMap = (function (tMap) {
                 $('#map > div:nth-of-type(2) > div:nth-of-type(3)').addClass('map_zoom');
             });
 
-            naver.maps.Event.addListener(map, 'idle', function () {
-                updateMarkers(map, markers);
-                console.log('지도 움직임');
-            });
+            // naver.maps.Event.addListener(map, 'idle', function () {
+            //     updateMarkers(map, markers);
+            //     console.log('지도 움직임');
+            // });
         };
     }
-
-    var movePosition = function (text, loc, zoom) {
-        map.setCenter(loc);
-        map.setZoom(zoom || 17);
-    };
 
     var deg2rad = function (deg) {
         return deg * (Math.PI / 180);
@@ -285,7 +298,25 @@ var _tMap = (function (tMap) {
         } else {
             tMap.render(_event, 'event', 'tabmenu');
         }
-        // agreeGeoLocation();
+        setInterval(function () {
+            tMap.agreeGeoLocation();
+        }, CALL_CURRENT_TIME);
+    };
+
+    tMap.vibrate = function () {
+        if (!window) {
+            return;
+        }
+
+        if (!window.navigator) {
+            return;
+        }
+
+        if (!window.navigator.vibrate) {
+            return;
+        }
+
+        window.navigator.vibrate([200, 100, 200]);
     };
 
     tMap.loadingEnd = function (delay) {
@@ -348,6 +379,21 @@ var _tMap = (function (tMap) {
     var drawInfoArr = [];
     var resultdrawArr = [];
 
+    var MapType = function (type) {
+        if ('SATELLITE' == type) {
+            map.setMapType(Tmapv2.Map.MapType.SATELLITE);
+        } else if ('HYBRID' == type) {
+            map.setMapType(Tmapv2.Map.MapType.HYBRID);
+        } else if ('ROAD' == type) {
+            map.setMapType(Tmapv2.Map.MapType.ROAD);
+        }
+    };
+
+    document.querySelector('.map_act_btn_wrap').addEventListener('click', function (e) {
+        var id = e.target.getAttribute('data-id');
+        MapType(id);
+    });
+
     function initTmap() {
         // 2. 시작, 도착 심볼찍기
         // 시작
@@ -389,7 +435,7 @@ var _tMap = (function (tMap) {
                 var tDistance = '총 거리 : ' + (resultData[0].properties.totalDistance / 1000).toFixed(1) + 'km,';
                 var tTime = ' 총 시간 : ' + (resultData[0].properties.totalTime / 60).toFixed(0) + '분';
 
-                alert(tDistance + tTime);
+                console.log(tDistance + tTime);
 
                 //기존 그려진 라인 & 마커가 있다면 초기화
                 if (resultdrawArr.length > 0) {
@@ -465,7 +511,7 @@ var _tMap = (function (tMap) {
                 drawLine(drawInfoArr);
 
                 /* TODO: 현 위치 테스트 */
-                agreeGeoLocation();
+                tMap.agreeGeoLocation();
             },
             error: function (request, status, error) {
                 console.log('code:' + request.status + '\n' + 'message:' + request.responseText + '\n' + 'error:' + error);
@@ -480,49 +526,70 @@ var _tMap = (function (tMap) {
 
         tMap.loadingEnd();
 
+        var tonenm = new Tmapv2.LatLng(37.281787642136216, 127.01519107419634);
         var mapData = category || [];
-        var firstPosition = new Tmapv2.LatLng(mapData[0].point.split(',')[0], mapData[0].point.split(',')[1]) || new Tmapv2.LatLng(_myPositionX, _myPositionY);
-        var tonenm = new Tmapv2.LatLng(37.2808757, 127.0140568);
-        var currentPosition = new Tmapv2.LatLng(_myPositionY, _myPositionX);
-        var searchPoint = !!searchData ? new Tmapv2.LatLng(searchData.point.split(',')[0], searchData.point.split(',')[1]) : firstPosition;
+        var curPosition = new Tmapv2.LatLng(tMap._myPositionY, tMap._myPositionX);
+        var searchPoint = (!!searchData && new Tmapv2.LatLng(searchData.point.split(',')[0], searchData.point.split(',')[1])) || tonenm;
         tMap.destory(markers);
 
         if (timeId) {
             clearTimeout(timeId);
         }
 
+        map.setCenter(!!searchData ? searchPoint : tonenm);
+        if ('tabmenu' !== isTrigger) {
+            map.setZoom(19);
+        } else {
+            map.setZoom(16);
+        }
+        if (!!searchData) {
+            $('.js-dimmed, .js-popOpen').css('display', 'none');
+            $('[data-open="' + upload + '"]').css('display', 'block');
+            allReplace($('[data-append="' + upload + '"]'), $('[data-db="' + upload + '"]'), ReplaceStr, searchData);
+        }
+
         timeId = setTimeout(function () {
             for (var i = 0; i < mapData.length; i++) {
                 var active = !!mapData[i].imagename_2 ? mapData[i].imagename_2 : '';
                 var position =
-                    new Tmapv2.LatLng(mapData[i].point.split(',')[0], mapData[i].point.split(',')[1]) || new Tmapv2.LatLng(_myPositionX, _myPositionY);
+                    new Tmapv2.LatLng(mapData[i].point.split(',')[0], mapData[i].point.split(',')[1]) ||
+                    new Tmapv2.LatLng(tMap._myPositionX, tMap._myPositionY);
+                var markerUrl = '';
+                var catego = mapData[i].title;
+                switch (upload) {
+                    case 'conv_parking':
+                        markerUrl = '/img/marker/parking.png';
+                        break;
+                    case 'conv_toilet':
+                        markerUrl = '/img/marker/toilet.png';
+                        break;
+                    case 'conv_store':
+                        if ('음식점' === catego) {
+                            markerUrl = '/img/marker/food.png';
+                        } else if ('카페' === catego) {
+                            markerUrl = '/img/marker/cafe.png';
+                        } else if ('디저트' === catego) {
+                            markerUrl = '/img/marker/desert.png';
+                        }
+                        break;
+                    default:
+                        markerUrl = '/upload/' + upload + '/' + mapData[i].imagename;
+                        break;
+                }
                 var marker = new Tmapv2.Marker({
                     map: map,
                     position: position,
-                    title: mapData[i].title,
-                    icon: '/upload/' + upload + '/' + mapData[i].imagename,
-                    // iconSize: new naver.maps.Size(135, 135),
+                    title: upload + mapData[i].no,
+                    animation: Tmapv2.MarkerOptions.ANIMATE_BALLOON,
+                    icon: {
+                        url: markerUrl || '/upload/' + upload + '/' + mapData[i].imagename || '',
+                    },
+                    zIndex: 100,
                 });
-
-                // var infoWindow = new naver.maps.InfoWindow({
-                //     content: '<div style="width:150px;text-align:center;padding:10px;">' + mapData[i].title + '</div>'
-                // });
-                // infoWindows.push(infoWindow);
-                map.setCenter(!!searchData ? searchPoint : tonenm);
                 markers.push(marker);
-                if ('tabmenu' !== isTrigger) {
-                    map.setZoom(30);
-                } else {
-                    map.setZoom(17);
-                }
-
-                naver.maps.Event.addListener(markers[i], 'click', getClickHandler(mapData, mapData[i].no, upload, active));
-
-                if (!!searchData) {
-                    $('.js-dimmed, .js-popOpen').css('display', 'none');
-                    $('[data-open="' + upload + '"]').css('display', 'block');
-                    allReplace($('[data-append="' + upload + '"]'), $('[data-db="' + upload + '"]'), ReplaceStr, searchData);
-                }
+                markers[i].addEventListener('click', function () {
+                    getClickHandler(mapData, mapData[i].no, upload, active, catego);
+                });
             }
         }, 1000 * 0.5);
     };
@@ -596,17 +663,6 @@ var _tMap = (function (tMap) {
                 tMap.openUrl(_myPositionY + ',' + _myPositionX, cord, '현위치', name);
             }
         });
-
-        /* 검색 */
-        // $('.searchBtn input').on('click', function () {
-        //     movePosition();
-        // });
-
-        // $('.js-search').on('keydown', function (event) {
-        //     if (event.key === 13) {
-        //         movePosition();
-        //     }
-        // });
     };
 
     return tMap;

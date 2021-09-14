@@ -8,9 +8,21 @@
         <link rel="stylesheet" href="./style.css">
     </head>
     <body>
-        <div id="map"></div>
+        <div id="map">
+            <div class="map_act_btn_wrap clear_box">
+                <button data-id='ROAD'>ROAD</button>
+                <button data-id='SATELLITE'>SATELLITE</button>
+                <button data-id='HYBRID'>HYBRID</button>
+            </div>
+        </div>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <script src="https://apis.openapi.sk.com/tmap/jsv2?version=1&appKey=l7xx9bdd39c31a2745f6a9daff28b6e80513"></script>
         <script src="./tmap.js"></script>
+        <script>
+            var searchResult = '';
+            var _event = '';
+            var searchData = '';
+            _tMap.init();
+        </script>
     </body>
 </html>
