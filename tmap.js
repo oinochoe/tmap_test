@@ -15,22 +15,37 @@ var _tMap = (function (tMap) {
         timeout: 5000,
         maximumAge: 0,
     };
+    var curMarker = [];
+    var curInfo = [];
 
     var currentPosition = function (locate) {
         var infoLoc = new Tmapv2.LatLng(tMap._myPositionY, tMap._myPositionX);
-        new Tmapv2.InfoWindow({
+        var loc = new Tmapv2.LatLng(tMap._myPositionY, tMap._myPositionX);
+        var info = new Tmapv2.InfoWindow({
             position: infoLoc,
             content: '<div>현재 위치</div>', //Popup 표시될 text
             type: 2, //Popup의 type 설정.
             map: map, //Popup이 표시될 맵 객체
         });
-        var loc = new Tmapv2.LatLng(tMap._myPositionY, tMap._myPositionX);
+
         var marker = new Tmapv2.Marker({
             position: loc,
             map: map,
         });
-        map.setCenter(locate || loc);
+
+        if (1 <= curMarker.length) {
+            curMarker[0].setMap(null);
+            curInfo[0].setMap(null);
+            curMarker = [];
+            curInfo = [];
+        }
+
+        curMarker.push(marker);
+        curInfo.push(info);
+
+        map.setCenter(infoLoc || loc);
         marker.setMap(map);
+        info.setMap(map);
         map.setZoom(19);
     };
 
@@ -263,7 +278,7 @@ var _tMap = (function (tMap) {
                 $('#map > div:nth-of-type(2) > div:nth-of-type(3)').addClass('map_zoom');
             });
 
-            // naver.maps.Event.addListener(map, 'idle', function () {
+            // Tmapv2.Event.addListener(map, 'idle', function () {
             //     updateMarkers(map, markers);
             //     console.log('지도 움직임');
             // });
